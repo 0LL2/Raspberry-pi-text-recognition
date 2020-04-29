@@ -1,0 +1,69 @@
+#Kirjastot
+import cv2 
+import pytesseract
+import numpy as np
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+
+camera = PiCamera()
+camera.resolution = (640, 480) #Resoluutio
+camera.framerate = 30 #Aseta kuvanpäivitystaajuus
+
+config = ("-l fin")   #--oem 1 --psm 7 #Tallenna config-muuttujaantesseract asetukset
+
+#kuva1 = cv2.imread('test2.png',0) #Lue kuva tiedostosta
+
+rawCapture = PiRGBArray(camera, size=(640, 480))
+
+for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+    
+    image = frame.array
+    
+    grayimage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) #Muunna kuva harmaaksi
+    
+    blurrattu = cv2.bilateralFilter(grayimage, 10, 17, 17) #Muunna harmaa kuva blurratuksi
+    
+    kernel = np.ones((5,5),np.uint8) #Kohinanpoisto
+    
+    opening = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel) #Toinen kohinanpoisto
+    
+    #opening1 = cv2.morphologyEx(kuva1, cv2.MORPH_OPEN, kernel) 
+    
+    #cv2.imshow("Kuva", kuva1) #Näytä kuva
+    
+    cv2.imshow("Livekuva original"     , image)  #Näytä openCV:llä kuvat eri manipuloinneilla
+    cv2.imshow("Livekuva harmaana"     , grayimage)
+    cv2.imshow("Livekuva blurrattu"    , blurrattu)
+    cv2.imshow("Livekuva kohinanpoisto", opening)
+    
+    key = cv2.waitKey(1) & 0xFF #key = odota napin painallusta
+    
+    rawCapture.truncate(0) #Aseta kuvan koko bitteinä
+    
+    #text = pytesseract.image_to_string(kuva1, config=config)
+    #text = pytesseract.image_to_string(cropped, config='outputbase digits')
+    
+    if key == ord("s"): #Kun s-kirjainta painetaan, muunna kuva text muuttujiin
+        text  = pytesseract.image_to_string(image    , config=config) #Muunna eri manipuloinnit text muuttujaan
+        text1 = pytesseract.image_to_string(grayimage, config=config)
+        text2 = pytesseract.image_to_string(blurrattu, config=config)
+        text3 = pytesseract.image_to_string(opening  , config=config)
+        #text   = pytesseract.image_to_string(kuva1    , config=config)
+        
+        print("Alkuperäinen") #Printtaa eri manipulointejen teksti
+        print(text)
+        print("Harmaa")
+        print(text1)
+        print("Sumennettu")
+        print(text2)
+        print("Kohinanpoisto")
+        print(text3)
+        
+        cv2.imshow("Livekuva original"     , image) #Näytä eri manipulointejen livekuvat
+        cv2.imshow("Livekuva harmaana"     , grayimage)
+        cv2.imshow("Livekuva blurrattu"    , blurrattu)
+        cv2.imshow("Livekuva kohinanpoisto", opening)
+        cv2.waitKey(0) # Odota painallusta ennen kun sulkee ikkunan
+        break
+
+cv2.destroyAllWindows() #Tuhoa kaikki ikkunat
